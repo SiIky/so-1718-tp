@@ -24,7 +24,7 @@
 #include <utils/ifjmp.h>
 #include <utils/ifnotnull.h>
 
-#include "file.h"
+#include <file.h>
 
 struct file {
     int fd;
@@ -63,8 +63,8 @@ static size_t _file_fill (struct file * self)
     ssize_t r = read(self->fd, FILE_OFFSET(self->buf, self->len), free);
     ifjmp(r <= 0, out);
 
-    ret = r;
-    self->len += r;
+    ret = (size_t) r;
+    self->len += ret;
 
 out:
     return ret;
@@ -166,7 +166,7 @@ out:
 
 static inline size_t _file_ssize_t_2_size_t (ssize_t n)
 {
-    return (n >= 0) ? n : 0;
+    return (n >= 0) ? ((size_t) n) : 0;
 }
 
 bool file_close (struct file * self)
