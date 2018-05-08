@@ -9,9 +9,10 @@
 #include <outputs.h>
 #include <rope.h>
 #include <str.h>
+#include <tralloc.h>
 
-#define stdin  0
-#define stdout 1
+#define stdinfd  0
+#define stdoutfd 1
 
 int usage (const char * cmd)
 {
@@ -29,6 +30,7 @@ char ** line_to_argv (struct str * line)
 
 void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outputs)
 {
+    (void) outputs;
     /* merdas comuns */
     bool ip = is_pipe(line);
     char ** argv = NULL;
@@ -49,10 +51,10 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     ifjmp(c == -1, cleanup);
 
     if (c == 0) {
-        dup2(outpipe[1], stdout);
+        dup2(outpipe[1], stdoutfd);
 
         if (ip)
-            dup2(inpipe[0], stdin);
+            dup2(inpipe[0], stdinfd);
 
         close(outpipe[0]);
         close(outpipe[1]);
@@ -130,8 +132,13 @@ int main (int argc, char ** argv)
 {
     ifjmp(argc < 2, usage);
 
+    trinit();
+
     for (int i = 1; i < argc; i++)
         noob(argv[i]);
+
+    treprint();
+    trdeinit();
 
     return 0;
 

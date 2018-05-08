@@ -1,6 +1,7 @@
 #ifndef _OUTPUTS_H
 #define _OUTPUTS_H
 
+#include <tralloc.h>
 #include <stddef.h>
 
 struct outputs {

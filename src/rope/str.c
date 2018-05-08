@@ -1,6 +1,6 @@
 #define VEC_IMPLEMENTATION
 #include <str.h>
-
+#include <tralloc.h>
 #include <string.h>
 
 bool str_eq (struct str * a, struct str * b)

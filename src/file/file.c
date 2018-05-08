@@ -23,6 +23,7 @@
 #include <utils/common.h>
 #include <utils/ifjmp.h>
 #include <utils/ifnotnull.h>
+#include <tralloc.h>
 
 #include <file.h>
 

@@ -1,6 +1,8 @@
 #ifndef _STR_H
 #define _STR_H
 
+#include <tralloc.h>
+
 #define VEC_DATA_TYPE char
 #define VEC_PREFIX    str_
 #define VEC_VEC       str
