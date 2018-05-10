@@ -14,10 +14,12 @@
 
 #define stdinfd  0
 #define stdoutfd 1
+#define stderrfd 2
 
-int usage (const char * cmd)
+int usage (void)
 {
-    (void) cmd;
+    char usg[] = "Usage: noob FILE...\n";
+    write(stderrfd, usg, sizeof(usg) / sizeof(*usg));
     return !0;
 }
 
@@ -190,8 +192,9 @@ cleanup:
 
 #define is_cmd_line(line) (str_get_nth((line), 0) == '$')
 
-void noob (const char * fname)
+int noob (const char * fname)
 {
+    int ret = 0;
     struct file * fin = NULL;
     void * buf = NULL;
     struct str * line = NULL;
@@ -217,11 +220,16 @@ void noob (const char * fname)
             process_cmd_line(rope, line, outputs);
     }
 
-ko:
+out:
     ifnotnull(fin, file_close);
     ifnotnull(outputs, ovec_free);
     ifnotnull(rope, rope_free);
     ifnotnull(line, str_free);
+    return ret;
+
+ko:
+    ret = 1;
+    goto out;
 }
 
 /*
@@ -234,14 +242,15 @@ int main (int argc, char ** argv)
 
     trinit();
 
+    int ret = 0;
     for (int i = 1; i < argc; i++)
-        noob(argv[i]);
+        ret += noob(argv[i]);
 
     treprint();
     trdeinit();
 
-    return 0;
+    return ret;
 
 usage:
-    return usage(*argv);
+    return usage();
 }
