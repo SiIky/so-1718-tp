@@ -1,11 +1,3 @@
-/* strdup() is not in C11 */
-#define _XOPEN_SOURCE 500
-/*
- * <string.h>
- *  strdup()
- */
-#include <string.h>
-
 #include <utils/ifnotnull.h>
 
 /*
@@ -30,6 +22,7 @@
  */
 #include "trs.h"
 #include "trs_vec.h"
+#include "trstrdup.h"
 
 #include "tralloc.h"
 
@@ -84,7 +77,7 @@ void * _trmalloc (size_t size, const char * file, const char * func, unsigned sh
         }                                              \
         /* old is empty, dup new */                    \
         if (trs.field == NULL) {                       \
-            trs.field = strdup(field);                 \
+            trs.field = trstrdup(field);               \
             break;                                     \
         }                                              \
         /*                                             \
@@ -93,7 +86,7 @@ void * _trmalloc (size_t size, const char * file, const char * func, unsigned sh
          */                                            \
         if (strcmp(field, trs.field) != 0) {           \
             free(trs.field);                           \
-            trs.field = strdup(field);                 \
+            trs.field = trstrdup(field);               \
         }                                              \
     } while (0)
 

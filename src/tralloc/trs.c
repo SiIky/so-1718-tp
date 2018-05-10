@@ -1,12 +1,9 @@
-/* strdup() is not in C11 */
-#define _XOPEN_SOURCE 500
 /*
  * <stdlib.h>
  *  free()
  *
  * <string.h>
  *  memset()
- *  strdup()
  */
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +11,7 @@
 #include <utils/ifnotnull.h>
 
 #include "trs.h"
+#include "trstrdup.h"
 
 int trs_eq (struct trs a, struct trs b)
 {
@@ -33,8 +31,8 @@ struct trs _trs_free (struct trs self)
 struct trs _trs_new (size_t size, void * ptr, const char * file, const char * func, unsigned short line)
 {
     return (struct trs) {
-        .file = (file != NULL) ? strdup(file) : NULL,
-        .func = (func != NULL) ? strdup(func) : NULL,
+        .file = (file != NULL) ? trstrdup(file) : NULL,
+        .func = (func != NULL) ? trstrdup(func) : NULL,
         .line = line,
         .size = size,
         .ptr = ptr,

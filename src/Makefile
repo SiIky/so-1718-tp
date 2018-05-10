@@ -33,23 +33,25 @@ CFLAGS := \
     -static          \
 
 SRC := \
-    file/file.c       \
-    noob.c            \
-    outputs.c         \
-    rope/rope.c       \
-    rope/str.c        \
-    tralloc/tralloc.c \
-    tralloc/trs.c     \
-    tralloc/trs_vec.c \
+    file/file.c        \
+    noob.c             \
+    outputs.c          \
+    rope/rope.c        \
+    rope/str.c         \
+    tralloc/tralloc.c  \
+    tralloc/trs.c      \
+    tralloc/trs_vec.c  \
+    tralloc/trstrdup.c \
 
 HEADERS := \
-    file/file.h       \
-    outputs.h         \
-    rope/rope.h       \
-    rope/str.h        \
-    tralloc/tralloc.h \
-    tralloc/trs.h     \
-    tralloc/trs_vec.h \
+    file/file.h        \
+    outputs.h          \
+    rope/rope.h        \
+    rope/str.h         \
+    tralloc/tralloc.h  \
+    tralloc/trs.h      \
+    tralloc/trs_vec.h  \
+    tralloc/trstrdup.h \
 
 OBJS := $(SRC:.c=.o)
 
