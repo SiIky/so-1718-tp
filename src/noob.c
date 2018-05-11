@@ -16,6 +16,8 @@
 #define stdoutfd 1
 #define stderrfd 2
 
+#define merdas() printf("%d\n", __LINE__)
+
 int usage (void)
 {
     char usg[] = "Usage: noob FILE...\n";
@@ -120,13 +122,14 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     if (c == 0) {
         dup2(outpipe[1], stdoutfd);
 
-        if (ip)
+        if (ip) {
             dup2(inpipe[0], stdinfd);
+            close(inpipe[0]);
+            close(inpipe[1]);
+        }
 
         close(outpipe[0]);
         close(outpipe[1]);
-        close(inpipe[0]);
-        close(inpipe[1]);
 
         execvp(*argv, argv);
         exit(1);
@@ -145,14 +148,13 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
 
         close(inpipe[1]);
         close(inpipe[0]);
-        close(outpipe[1]);
     }
 
 #define _coiso(rope, ch)                 \
     do {                                 \
         struct str * l = str_new();      \
         for (size_t i = 0; i < 3; i++) { \
-            str_push(l, '>');            \
+            str_push(l, ch);             \
         }                                \
         str_push(l, '\n');               \
         rope_push(rope, l);              \
@@ -165,7 +167,7 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
 
     void * buf = NULL;
 
-    struct outputs o = {0};
+    struct outputs o;
     o.i = rope_len(rope);
 
     for (size_t r = 0; (r = file_readline(outf, &buf)) > 0; buf = NULL) {
@@ -184,13 +186,50 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
 cleanup:
     ifnotnull(outf, file_close);
     if (argv != NULL) {
-        while (*argv != NULL)
+        while (*argv != NULL) {
             trfree(*argv);
+            argv++;
+        }
         trfree(argv);
     }
 }
 
-#define is_cmd_line(line) (str_get_nth((line), 0) == '$')
+enum LTYPE {
+    LTYPE_CMD,
+    LTYPE_OP_ST,
+    LTYPE_OP_MID,
+    LTYPE_OP_END,
+    LTYPE_TEXT,
+    LTYPE_INVALID,
+};
+
+enum LTYPE ltype (struct str * line)
+{
+    static bool mid = false;
+    char begin[] = ">>>";
+    char end[] = "<<<";
+    enum LTYPE ret = LTYPE_INVALID;
+
+    if (str_get_nth((line), 0) == '$') {
+        ret = LTYPE_CMD;
+    } else if (str_len(line) == 4) {
+        if (strncmp(begin, str_as_slice(line), 3) == 0) {
+            ret = LTYPE_OP_ST;
+            mid = true;
+        } else if (strncmp(end, str_as_slice(line), 3) == 0) {
+            ret = LTYPE_OP_END;
+            mid = false;
+        } else {
+            ret = (mid) ?
+                LTYPE_OP_MID :
+                LTYPE_TEXT ;
+        }
+    } else {
+        ret = LTYPE_TEXT;
+    }
+
+    return ret;
+}
 
 int noob (const char * fname)
 {
@@ -214,10 +253,31 @@ int noob (const char * fname)
         line = str_from_raw_parts(buf, r, r);
         ifjmp(line == NULL, ko);
 
-        rope_push(rope, line);
+        switch (ltype(line)) {
+            case LTYPE_CMD:
+                rope_push(rope, line);
+                process_cmd_line(rope, line, outputs);
+                break;
+            case LTYPE_TEXT:
+                rope_push(rope, line);
+                break;
+            case LTYPE_OP_ST:
+            case LTYPE_OP_MID:
+            case LTYPE_OP_END:
+                str_free(line);
+                break;
+            case LTYPE_INVALID:
+            default:
+                break;
+                goto ko;
+        }
+    }
 
-        if (is_cmd_line(line))
-            process_cmd_line(rope, line, outputs);
+
+    for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
+        struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
+        str_set_nth(l, str_len(l) - 1, '\0');
+        printf("%s\n", str_as_slice(l));
     }
 
 out:

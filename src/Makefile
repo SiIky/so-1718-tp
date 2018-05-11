@@ -30,7 +30,6 @@ CFLAGS := \
     -Wextra          \
     -g               \
     -pedantic        \
-    -static          \
 
 SRC := \
     file/file.c        \
