@@ -1,13 +1,9 @@
 /*
- * <stdlib.h>
- *  free()
- *
  * <string.h>
  *  memchr()
  *  memcpy()
  *  memmove()
  */
-#include <stdlib.h>
 #include <string.h>
 
 /*
@@ -49,8 +45,8 @@ static inline size_t        _file_ssize_t_2_size_t (ssize_t n);
 
 static bool _file_free (struct file * self)
 {
-    free(self->buf);
-    free(self);
+    trfree(self->buf);
+    trfree(self);
     return true;
 }
 
@@ -137,7 +133,7 @@ static size_t _file_read_most_buf (struct file * self, void * buf, size_t count)
 
 static struct file * _file_new (void)
 {
-    struct file * ret = malloc(sizeof(struct file));
+    struct file * ret = trmalloc(sizeof(struct file));
 
     if (ret != NULL) {
         ret->fd = -1;
@@ -156,7 +152,7 @@ static struct file * _file_with_cap (size_t cap)
     ifjmp(ret == NULL, out);
     ifjmp(cap == 0, out);
 
-    ret->buf = malloc(cap);
+    ret->buf = trmalloc(cap);
     ret->cap = (ret->buf != NULL) ?
         cap :
         0;
@@ -243,7 +239,7 @@ size_t file_readline (struct file * self, void ** buf)
         /* new ret_buf capacity */
         size_t nret_cap = ret_cap + toc;
 
-        void * tmp = realloc(ret_buf, nret_cap);
+        void * tmp = trrealloc(ret_buf, nret_cap);
         ifjmp(tmp == NULL, realloc_fail);
 
         ret_buf = tmp;
