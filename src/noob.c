@@ -1,7 +1,6 @@
 #include <ctype.h>
 
 #include <unistd.h>
-
 #include <utils/ifjmp.h>
 #include <utils/ifnotnull.h>
 
@@ -274,10 +273,24 @@ int noob (const char * fname)
     }
 
 
+//    for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
+//        struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
+//        str_set_nth(l, str_len(l) - 1, '\0');
+//        printf("%s\n", str_as_slice(l));
+//    }
+char filename[] = "/tmp/mytemp.noob"; 
+int fd = mkstemp(filename);
     for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
         struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
         str_set_nth(l, str_len(l) - 1, '\0');
-        printf("%s\n", str_as_slice(l));
+        
+        write(fd,str_as_slice(l),str_len(l));
+        write(fd,"\n",2);
+    }
+
+    int pid = fork();
+    if (!pid) {
+        execlp("mv","mv",filename,fname,(char*)0);
     }
 
 out:
