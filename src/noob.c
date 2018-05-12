@@ -85,10 +85,10 @@ char ** line_to_argv (struct str * line)
     for (size_t i = 0; i < wc; i++) {
         struct str * w = rope_remove(r, 0);
         ret[i] = str_as_mut_slice(w);
-        str_set_len(w, 0);
         trfree(w);
     }
 
+    rope_free(r);
     ret[wc] = NULL;
 
 out:
@@ -105,6 +105,7 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     int inpipe[2];
     int outpipe[2];
     struct file * outf = NULL;
+    void * buf = NULL;
 
     pipe(outpipe);
 
@@ -164,8 +165,6 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     outf = file_fdopen(outpipe[0]);
     ifjmp(outf == NULL, cleanup);
 
-    void * buf = NULL;
-
     struct outputs o;
     o.i = rope_len(rope);
 
@@ -184,6 +183,7 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
 
 cleanup:
     ifnotnull(outf, file_close);
+    ifnotnull(buf, trfree);
     if (argv != NULL) {
         while (*argv != NULL) {
             trfree(*argv);
@@ -267,8 +267,8 @@ int noob (const char * fname)
                 break;
             case LTYPE_INVALID:
             default:
-                break;
                 goto ko;
+                break;
         }
     }
 
