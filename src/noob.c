@@ -185,9 +185,10 @@ cleanup:
     ifnotnull(outf, file_close);
     ifnotnull(buf, trfree);
     if (argv != NULL) {
-        while (*argv != NULL) {
-            trfree(*argv);
-            argv++;
+        size_t i = 0;
+        while (argv[i] != NULL) {
+            trfree(argv[i]);
+            i++;
         }
         trfree(argv);
     }
@@ -235,7 +236,6 @@ int noob (const char * fname)
     int ret = 0;
     struct file * fin = NULL;
     void * buf = NULL;
-    struct str * line = NULL;
     struct rope * rope = NULL;
     struct ovec * outputs = NULL;
 
@@ -249,7 +249,7 @@ int noob (const char * fname)
     ifjmp(outputs == NULL, ko);
 
     for (size_t r = 0; (r = file_readline(fin, &buf)) > 0; buf = NULL) {
-        line = str_from_raw_parts(buf, r, r);
+        struct str * line = str_from_raw_parts(buf, r, r);
         ifjmp(line == NULL, ko);
 
         switch (ltype(line)) {
@@ -294,10 +294,10 @@ int fd = mkstemp(filename);
     }
 
 out:
+    ifnotnull(buf, trfree);
     ifnotnull(fin, file_close);
     ifnotnull(outputs, ovec_free);
     ifnotnull(rope, rope_free);
-    ifnotnull(line, str_free);
     return ret;
 
 ko:

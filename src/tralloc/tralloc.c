@@ -54,7 +54,11 @@ void _trfree (void * ptr)
         size_t idx = trs_find(trvec, tmp);
 
         if (idx < trs_len(trvec)) /* ptr was found */
-            _trs_free(trs_swap_remove(trvec, idx));
+            /*
+             * VEC_SWAP_REMOVE() has a bug, use VEC_REMOVE()
+             * temporarily instead
+             */
+            _trs_free(trs_remove(trvec, idx));
     }
 }
 
@@ -186,5 +190,6 @@ void _trinit (void)
 
 void _trdeinit (void)
 {
-    trs_free(trvec);
+    if (trvec != NULL)
+        trs_free(trvec);
 }
