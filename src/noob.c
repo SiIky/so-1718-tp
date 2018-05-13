@@ -61,7 +61,7 @@ struct rope * words (struct str * l)
             ifjmp(w == NULL, out);
             for (size_t c = i; c <= f; c++)
                 str_push(w, str_get_nth(l, c));
-            str_push(w, '\0');
+    ////        str_push(w, '\0');
 
             rope_push(ret, w);
         }
@@ -282,17 +282,17 @@ char filename[] = "/tmp/mytemp.noob";
 int fd = mkstemp(filename);
     for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
         struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
-        str_set_nth(l, str_len(l) - 1, '\0');
+//        str_set_nth(l, str_len(l) - 1, '\0');
         
         write(fd,str_as_slice(l),str_len(l));
-        write(fd,"\n",2);
+//        write(fd,"\n",2);
     }
 
-    int pid = fork();
-    if (!pid) {
-        execlp("mv","mv",filename,fname,(char*)0);
-    }
-
+//    int pid = fork();
+//    if (!pid) {
+//        execlp("mv","mv",filename,fname,(char*)0);
+//    }
+int rn = rename(filename, fname);
 out:
     ifnotnull(buf, trfree);
     ifnotnull(fin, file_close);
