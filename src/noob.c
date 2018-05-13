@@ -38,6 +38,13 @@ int usage (void)
         }                                                                     \
     } while (0)
 
+/* TODO: Tratar strings correctamente
+ *     "echo \"what? a string?\""
+ * deve ser transformado em
+ *     ["echo", "\"what? a string?\""]
+ * em vez de
+ *     ["echo", "\"what?", "a", "string?\""]
+ */
 struct rope * words (struct str * l)
 {
     struct rope * ret = rope_new();
