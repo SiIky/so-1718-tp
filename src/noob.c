@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdlib.h>
 
 #include <unistd.h>
 #include <utils/ifjmp.h>
@@ -68,7 +69,7 @@ struct rope * words (struct str * l)
             ifjmp(w == NULL, out);
             for (size_t c = i; c <= f; c++)
                 str_push(w, str_get_nth(l, c));
-    ////        str_push(w, '\0');
+            str_push(w, '\0');
 
             rope_push(ret, w);
         }
@@ -245,6 +246,7 @@ int noob (const char * fname)
     void * buf = NULL;
     struct rope * rope = NULL;
     struct ovec * outputs = NULL;
+    int tmpfd = -1;
 
     fin = file_open(fname, O_RDONLY);
     ifjmp(fin == NULL, ko);
@@ -279,32 +281,27 @@ int noob (const char * fname)
         }
     }
 
+    char tmpfname[] = "/tmp/noob.XXXXXX";
+    tmpfd = mkstemp(tmpfname);
+    ifjmp(tmpfd == -1, ko);
 
-//    for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
-//        struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
-//        str_set_nth(l, str_len(l) - 1, '\0');
-//        printf("%s\n", str_as_slice(l));
-//    }
-char filename[] = "/tmp/mytemp.noob"; 
-int fd = mkstemp(filename);
     for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
         struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
-//        str_set_nth(l, str_len(l) - 1, '\0');
-        
-        write(fd,str_as_slice(l),str_len(l));
-//        write(fd,"\n",2);
+
+        write(tmpfd, str_as_slice(l), str_len(l));
     }
 
-//    int pid = fork();
-//    if (!pid) {
-//        execlp("mv","mv",filename,fname,(char*)0);
-//    }
-int rn = rename(filename, fname);
+    int rn = rename(tmpfname, fname);
+    ifjmp(rn == -1, ko);
+
 out:
     ifnotnull(buf, trfree);
     ifnotnull(fin, file_close);
     ifnotnull(outputs, ovec_free);
     ifnotnull(rope, rope_free);
+
+    if (tmpfd != -1) close(tmpfd);
+
     return ret;
 
 ko:

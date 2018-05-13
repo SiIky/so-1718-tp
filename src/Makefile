@@ -21,15 +21,16 @@ INCLUDE := \
     -Itralloc \
 
 CFLAGS := \
-    $(STD)           \
-    $(TRALLOC_TRACE) \
-    $(VEC_ALLOCS)    \
-    -Og              \
-    -Wall            \
-    -Wconversion     \
-    -Wextra          \
-    -g               \
-    -pedantic        \
+    $(STD)              \
+    $(TRALLOC_TRACE)    \
+    $(VEC_ALLOCS)       \
+    -D_XOPEN_SOURCE=500 \
+    -Og                 \
+    -Wall               \
+    -Wconversion        \
+    -Wextra             \
+    -g                  \
+    -pedantic           \
 
 SRC := \
     file/file.c        \
