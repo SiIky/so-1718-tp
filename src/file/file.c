@@ -58,8 +58,9 @@ static size_t _file_fill (struct file * self)
     ifjmp(free == 0, out);
 
     ssize_t r = read(self->fd, FILE_OFFSET(self->buf, self->len), free);
+    ifjmp(r <= 0, out);
 
-    ret = _file_ssize_t_2_size_t(r);
+    ret = (size_t) r;
     self->len += ret;
 
 out:
@@ -242,14 +243,8 @@ size_t file_readline (struct file * self, void ** buf)
         ifjmp(tmp == NULL, realloc_fail);
 
         ret_buf = tmp;
+        ret_len += _file_read_fill(self, FILE_OFFSET(ret_buf, ret_cap), toc);
         ret_cap = nret_cap;
-
-        size_t r = _file_read_fill(self, FILE_OFFSET(ret_buf, ret_cap), toc);
-        if (r == 0)
-            break;
-
-        ret_len += r;
-
     }
 
 realloc_fail:
