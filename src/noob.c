@@ -233,7 +233,9 @@ enum LTYPE ltype (struct str * line)
                 LTYPE_TEXT ;
         }
     } else {
-        ret = LTYPE_TEXT;
+        ret = (mid) ?
+            LTYPE_OP_MID :
+            LTYPE_TEXT;
     }
 
     return ret;
