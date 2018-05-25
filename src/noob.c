@@ -1,6 +1,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <utils/ifjmp.h>
 #include <utils/ifnotnull.h>
@@ -10,7 +12,6 @@
 #include <rope.h>
 #include <str.h>
 #include <tralloc.h>
-#include <outputs.h>
 
 #define stdinfd  0
 #define stdoutfd 1
@@ -211,7 +212,7 @@ enum LTYPE {
     LTYPE_INVALID,
 };
 
-enum LTYPE ltype (struct str * line)
+enum LTYPE ltype (const struct str * line)
 {
     static bool mid = false;
     char begin[] = ">>>";
@@ -322,9 +323,35 @@ int main (int argc, char ** argv)
     trinit();
 
     int ret = 0;
-    for (int i = 1; i < argc; i++)
-        ret += noob(argv[i]);
+    int cs = 0;
 
+    for (int i = 1; i < argc; i++) {
+        pid_t c = fork();
+
+        if (c == -1)
+            continue;
+
+        if (c == 0) {
+            ret = noob(argv[i]);
+            goto out;
+        }
+
+        cs++;
+    }
+
+    for (int i = 0; i < cs; i++) {
+        int st = 0;
+
+        if (wait(&st) == -1)
+            continue;
+
+        if (!WIFEXITED(st))
+            continue;
+
+        ret += WEXITSTATUS(st);
+    }
+
+out:
     treprint();
     trdeinit();
 
