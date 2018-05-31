@@ -1,23 +1,87 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <utils/ifjmp.h>
-#include <utils/ifnotnull.h>
 
 #include <file.h>
 #include <outputs.h>
+#include <pids.h>
 #include <rope.h>
 #include <str.h>
 #include <tralloc.h>
+#include <utils/ifjmp.h>
+#include <utils/ifnotnull.h>
+#include <utils/unused.h>
 
 #define stdinfd  0
 #define stdoutfd 1
 #define stderrfd 2
 
 #define merdas() printf("%d\n", __LINE__)
+
+/* master process */
+static struct pids * g_pids = NULL;
+
+/* slave processes */
+static char *        g_tmpfname = NULL;
+static pid_t         g_epid     = -1;
+static struct file * g_fin      = NULL;
+static struct ovec * g_outputs  = NULL;
+static struct rope * g_rope     = NULL;
+static void *        g_buf      = NULL;
+
+pid_t killer (pid_t p)
+{
+    kill(p, SIGINT);
+    return -1;
+}
+
+void sigint_master_handler (int _sig)
+{
+    UNUSED(_sig);
+
+    size_t cs = 0;
+    struct pids * pids = g_pids;
+
+    if (pids != NULL) {
+        cs = pids_len(pids);
+        pids_map(pids, killer);
+        pids_free(pids);
+    }
+
+    for (size_t i = 0; i < cs; i++)
+        wait(NULL);
+
+    treprint();
+    trdeinit();
+
+    exit(1);
+}
+
+void sigint_slave_handler (int _sig)
+{
+    UNUSED(_sig);
+
+    pid_t p = g_epid;
+    if (p > 0) {
+        kill(p, SIGINT);
+        waitpid(p, NULL, WNOHANG);
+    }
+
+    ifnotnull(g_buf,      trfree);
+    ifnotnull(g_fin,      file_close);
+    ifnotnull(g_outputs,  ovec_free);
+    ifnotnull(g_rope,     rope_free);
+    ifnotnull(g_tmpfname, unlink);
+
+    treprint();
+    trdeinit();
+
+    exit(1);
+}
 
 int usage (void)
 {
@@ -106,9 +170,10 @@ out:
 
 #define is_pipe(line) ((str_get_nth((line), 1) == '|') || isdigit(str_get_nth((line), 1)))
 
-void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outputs)
+int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outputs)
 {
     /* merdas comuns */
+    int ret = 0;
     bool ip = is_pipe(line);
     char ** argv = NULL;
     int inpipe[2];
@@ -118,15 +183,18 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
 
     pipe(outpipe);
 
+    if (ovec_is_empty(outputs))
+        ip = false;
+
     if (ip) /* merdas pro pipe */
         pipe(inpipe);
 
     argv = line_to_argv(line);
-    ifjmp(argv == NULL, cleanup);
+    ifjmp(argv == NULL, ko);
 
     /* executar */
     pid_t c = fork();
-    ifjmp(c == -1, cleanup);
+    ifjmp(c == -1, ko);
 
     if (c == 0) {
         dup2(outpipe[1], stdoutfd);
@@ -143,6 +211,8 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
         execvp(*argv, argv);
         exit(1);
     }
+
+    g_epid = c;
 
     close(outpipe[1]);
 
@@ -172,14 +242,16 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     _coiso(rope, '>');
 
     outf = file_fdopen(outpipe[0]);
-    ifjmp(outf == NULL, cleanup);
+    ifjmp(outf == NULL, ko);
 
     struct outputs o;
     o.i = rope_len(rope);
 
     for (size_t r = 0; (r = file_readline(outf, &buf)) > 0; buf = NULL) {
+        g_buf = buf;
         line = str_from_raw_parts(buf, r, r);
-        ifjmp(line == NULL, cleanup);
+        ifjmp(line == NULL, ko);
+        g_buf = NULL;
 
         rope_push(rope, line);
     }
@@ -190,7 +262,10 @@ void process_cmd_line (struct rope * rope, struct str * line, struct ovec * outp
     _coiso(rope, '<');
 #undef _coiso
 
-cleanup:
+    waitpid(-1, NULL, WNOHANG);
+    g_epid = -1;
+
+out:
     ifnotnull(outf, file_close);
     ifnotnull(buf, trfree);
     if (argv != NULL) {
@@ -201,6 +276,12 @@ cleanup:
         }
         trfree(argv);
     }
+
+    return ret;
+
+ko:
+    ret = 1;
+    goto out;
 }
 
 enum LTYPE {
@@ -253,12 +334,15 @@ int noob (const char * fname)
 
     fin = file_open(fname, O_RDONLY);
     ifjmp(fin == NULL, ko);
+    g_fin = fin;
 
     rope = rope_new();
     ifjmp(rope == NULL, ko);
+    g_rope = rope;
 
     outputs = ovec_new();
     ifjmp(outputs == NULL, ko);
+    g_outputs = outputs;
 
     for (size_t r = 0; (r = file_readline(fin, &buf)) > 0; buf = NULL) {
         struct str * line = str_from_raw_parts(buf, r, r);
@@ -288,6 +372,8 @@ int noob (const char * fname)
     tmpfd = mkstemp(tmpfname);
     ifjmp(tmpfd == -1, ko);
 
+    g_tmpfname = tmpfname;
+
     for (rope_iter(rope); rope_itering(rope); rope_iter_next(rope)) {
         struct str * l = rope_get_nth(rope, rope_iter_idx(rope));
 
@@ -298,6 +384,12 @@ int noob (const char * fname)
     ifjmp(rn == -1, ko);
 
 out:
+    g_fin = NULL;
+    g_outputs = NULL;
+    g_rope = NULL;
+    g_tmpfname = NULL;
+    g_buf = NULL;
+
     ifnotnull(buf, trfree);
     ifnotnull(fin, file_close);
     ifnotnull(outputs, ovec_free);
@@ -320,11 +412,16 @@ int main (int argc, char ** argv)
 {
     ifjmp(argc < 2, usage);
 
+    int ret = 0;
+
+    signal(SIGINT, sigint_master_handler);
     trinit();
 
-    int ret = 0;
-    int cs = 0;
+    struct pids * pids = pids_with_capacity(((size_t) argc) - 1);
+    ifjmp(pids == NULL, ko);
+    g_pids = pids;
 
+    int cs = 0;
     for (int i = 1; i < argc; i++) {
         pid_t c = fork();
 
@@ -332,6 +429,21 @@ int main (int argc, char ** argv)
             continue;
 
         if (c == 0) {
+#if 0
+            {
+                size_t len = strlen(argv[i]);
+                argv[i][len] = '\n';
+
+                write(stderrfd, argv[i], len + 1);
+
+                argv[i][len] = '\0';
+            }
+#endif
+
+            pids_free(pids);
+            g_pids = NULL;
+
+            signal(SIGINT, sigint_slave_handler);
             ret = noob(argv[i]);
             goto out;
         }
@@ -342,20 +454,37 @@ int main (int argc, char ** argv)
     for (int i = 0; i < cs; i++) {
         int st = 0;
 
-        if (wait(&st) == -1)
-            continue;
+        pid_t c = waitpid(-1, &st, WNOHANG);
 
-        if (!WIFEXITED(st))
+        if (c == -1) {
+            ret++;
             continue;
+        }
 
-        ret += WEXITSTATUS(st);
+        {
+            size_t idx = pids_find(pids, c);
+
+            if (idx < pids_len(pids))
+                pids_remove(pids, idx);
+        }
+
+        if (WIFEXITED(st))
+            ret += WEXITSTATUS(st);
+        else
+            ret++;
     }
 
 out:
+    pids_free(pids);
+    g_pids = NULL;
     treprint();
     trdeinit();
 
     return ret;
+
+ko:
+    ret++;
+    goto out;
 
 usage:
     return usage();

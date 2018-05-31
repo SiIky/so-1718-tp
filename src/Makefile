@@ -36,6 +36,7 @@ SRC := \
     file/file.c        \
     noob.c             \
     outputs.c          \
+    pids.c             \
     rope/rope.c        \
     rope/str.c         \
     tralloc/tralloc.c  \
@@ -46,6 +47,7 @@ SRC := \
 HEADERS := \
     file/file.h        \
     outputs.h          \
+    pids.h             \
     rope/rope.h        \
     rope/str.h         \
     tralloc/tralloc.h  \
