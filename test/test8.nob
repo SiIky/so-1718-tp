@@ -1,0 +1,8 @@
+dwad
+dawd
+wada
+$ ls -l
+$| cat
+$0| head -4
+$1| head -3
+$4| head -1
