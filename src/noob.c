@@ -12,6 +12,7 @@
 #include <rope.h>
 #include <str.h>
 #include <tralloc.h>
+#include <utils/common.h>
 #include <utils/ifjmp.h>
 #include <utils/ifnotnull.h>
 #include <utils/unused.h>
@@ -168,13 +169,30 @@ out:
     return ret;
 }
 
-#define is_pipe(line) ((str_get_nth((line), 1) == '|') || isdigit(str_get_nth((line), 1)))
+size_t line_to_n (struct str * line)
+{
+    char * l = str_as_mut_slice(line) + 1;
+    char * pipe = strchr(l, '|');
+    assert(pipe != NULL);
+    *pipe = '\0';
+    int ret = atoi(l);
+    *pipe = '|';
+    assert(ret >= 0);
+    if (ret == 0)
+        ret = 1;
+    return (size_t) ret;
+}
+
+#define is_last_pipe(line) (str_get_nth((line), 1) == '|')
+#define is_n_pipe(line)    (isdigit(str_get_nth((line), 1)))
 
 int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outputs)
 {
     /* merdas comuns */
     int ret = 0;
-    bool ip = is_pipe(line);
+    bool ilp = is_last_pipe(line);
+    bool inp = is_n_pipe(line);
+    bool ip = ilp || inp;
     char ** argv = NULL;
     int inpipe[2];
     int outpipe[2];
@@ -218,7 +236,16 @@ int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outpu
 
     if (ip) {
         /* escrever da rope no stdin do filho */
-        struct outputs o = ovec_get_nth(outputs, ovec_len(outputs) - 1);
+        size_t n = 1;
+
+        if (inp) {
+            n = line_to_n(line);
+            n = min(n, ovec_len(outputs));
+        }
+
+        size_t idx = ovec_len(outputs) - n;
+
+        struct outputs o = ovec_get_nth(outputs, idx);
 
         for (size_t i = o.i; i < o.f; i++) {
             struct str * l = rope_get_nth(rope, i);
