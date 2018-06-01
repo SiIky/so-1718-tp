@@ -55,7 +55,7 @@ void sigint_master_handler (int _sig)
     for (size_t i = 0; i < cs; i++)
         wait(NULL);
 
-    treprint();
+    //treprint();
     trdeinit();
 
     exit(1);
@@ -68,7 +68,7 @@ void sigint_slave_handler (int _sig)
     pid_t p = g_epid;
     if (p > 0) {
         kill(p, SIGINT);
-        waitpid(p, NULL, WNOHANG);
+        waitpid(p, NULL, 0);
     }
 
     ifnotnull(g_buf,      trfree);
@@ -77,7 +77,7 @@ void sigint_slave_handler (int _sig)
     ifnotnull(g_rope,     rope_free);
     ifnotnull(g_tmpfname, unlink);
 
-    treprint();
+    //treprint();
     trdeinit();
 
     exit(1);
@@ -256,15 +256,17 @@ int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outpu
         rope_push(rope, line);
     }
 
-    o.f = rope_len(rope) - 1;
+    o.f = rope_len(rope);
     ovec_push(outputs, o);
 
     _coiso(rope, '<');
 #undef _coiso
-
-    waitpid(-1, NULL, WNOHANG);
+    int st;
+    wait(&st);
     g_epid = -1;
 
+    ifjmp(!WIFEXITED(st), ko);
+    ifjmp(WEXITSTATUS(st) != 0, ko);
 out:
     ifnotnull(outf, file_close);
     ifnotnull(buf, trfree);
@@ -351,7 +353,8 @@ int noob (const char * fname)
         switch (ltype(line)) {
             case LTYPE_CMD:
                 rope_push(rope, line);
-                process_cmd_line(rope, line, outputs);
+                int r = process_cmd_line(rope, line, outputs);
+                ifjmp(r != 0, ko);
                 break;
             case LTYPE_TEXT:
                 rope_push(rope, line);
@@ -454,7 +457,7 @@ int main (int argc, char ** argv)
     for (int i = 0; i < cs; i++) {
         int st = 0;
 
-        pid_t c = waitpid(-1, &st, WNOHANG);
+        pid_t c = waitpid(-1, &st, 0);
 
         if (c == -1) {
             ret++;
