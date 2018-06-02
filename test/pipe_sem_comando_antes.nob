@@ -6,10 +6,8 @@ $| ls -l
 
 mesmo não havendo nenhum comando antes deste.
 
-Apesar deste ficheiro estar mal formado, o comando acima e
-executado correctamente.
-
-A partir daqui, o resto do ficheiro é processado normalmente
+Como este ficheiro esta mal formado, o nosso programa nao altera o
+ficheiro de entrada original.
 
 $| shuf
 
