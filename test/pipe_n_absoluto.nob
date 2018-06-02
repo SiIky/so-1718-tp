@@ -1,0 +1,25 @@
+Este exemplo mostra a funcionalidade de indicar o indice absoluto
+de um comando anterior:
+
+Listar ficheiros da pasta actual:
+
+$ ls -l
+
+Imprimir com uma ordem aleatoria:
+
+$| shuf
+
+Inverter essa ordem:
+
+$| tac
+
+Imprimir outra vez:
+
+$| cat
+
+Imprimir o resultado do primeiro comando executado:
+$-1| cat
+
+Imprimir a primeira linha do comando anterior:
+
+$| head
