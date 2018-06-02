@@ -169,35 +169,51 @@ out:
     return ret;
 }
 
-size_t line_to_n (struct str * line)
+size_t line_to_n (struct str * line, bool iap)
 {
+    /* deitar fora o '$' */
     char * l = str_as_mut_slice(line) + 1;
+
+    /* procurar pelo '|' */
     char * pipe = strchr(l, '|');
     assert(pipe != NULL);
     *pipe = '\0';
+
+    /* ler o numero */
     int ret = atoi(l);
+    if (iap) /* caso seja absoluto */
+        ret *= -1;
+
     *pipe = '|';
+
     assert(ret >= 0);
-    if (ret == 0)
+
+    if (ret == 0) /* 0 = 1 = primeiro comando/comando anterior */
         ret = 1;
+
     return (size_t) ret;
 }
 
-#define is_last_pipe(line) (str_get_nth((line), 1) == '|')
-#define is_n_pipe(line)    (isdigit(str_get_nth((line), 1)))
+#define is_abs_nth_pipe(line) ((str_get_nth((line), 1) == '-') && (isdigit(str_get_nth((line), 2))))
+#define is_last_pipe(line)    (str_get_nth((line), 1) == '|')
+#define is_rel_nth_pipe(line) (isdigit(str_get_nth((line), 1)))
 
 int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outputs)
 {
     /* merdas comuns */
     int ret = 0;
-    bool ilp = is_last_pipe(line);
-    bool inp = is_n_pipe(line);
-    bool ip = ilp || inp;
     char ** argv = NULL;
     int inpipe[2];
     int outpipe[2];
     struct file * outf = NULL;
     void * buf = NULL;
+
+    bool iap = is_abs_nth_pipe(line);
+    bool ilp = is_last_pipe(line);
+    bool irp = is_rel_nth_pipe(line);
+
+    bool inp = iap || irp;
+    bool ip = ilp || inp;
 
     pipe(outpipe);
 
@@ -235,14 +251,17 @@ int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outpu
 
     if (ip) {
         /* escrever da rope no stdin do filho */
-        size_t n = 1;
+        size_t len = ovec_len(outputs);
+        size_t idx = len - 1; /* para o caso "$|" */
 
-        if (inp) {
-            n = line_to_n(line);
+        if (inp) { /* caso nao seja "$|" */
+            size_t n = line_to_n(line, iap);
             n = min(n, ovec_len(outputs));
-        }
 
-        size_t idx = ovec_len(outputs) - n;
+            idx = (irp) ?
+                len - n: /* caso seja relativo */
+                n;       /* caso seja absoluto */
+        }
 
         struct outputs o = ovec_get_nth(outputs, idx);
 
@@ -311,6 +330,9 @@ ko:
     ret = 1;
     goto out;
 }
+#undef is_abs_nth_pipe
+#undef is_last_pipe
+#undef is_rel_nth_pipe
 
 enum LTYPE {
     LTYPE_CMD,
