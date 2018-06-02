@@ -1,6 +1,6 @@
 CC := gcc
 
-EXEC := noob
+EXEC := notebook
 
 STD := -std=c11
 
@@ -65,10 +65,16 @@ $(EXEC): $(OBJS)
 %.o: %.c
 	$(CC) $(INCLUDE) $(CFLAGS) -c -o $@ $<
 
-cppcheck:
-	cppcheck --language=c --enable=all --platform=unix64 --inconclusive -f -v $(INCLUDE) $(SRC) $(HEADERS)
+ZIP := entrega.zip
+RELATORIO := relatorio.pdf
+
+entrega: $(ZIP)
+
+$(ZIP): $(SRC) $(HEADERS) Makefile $(RELATORIO)
+	$(RM) $(ZIP)
+	zip -r -n: -9 $(ZIP) $(SRC) $(HEADERS) Makefile $(RELATORIO) *.nob
 
 clean:
-	$(RM) $(OBJS) $(EXEC)
+	$(RM) $(OBJS) $(EXEC) $(ZIP)
 
-.PHONY: all cppcheck clean
+.PHONY: all cppcheck clean entrega
