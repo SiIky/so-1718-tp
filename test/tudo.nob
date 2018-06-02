@@ -1,0 +1,98 @@
+# Processador de Notebooks
+
+Este ficheiro de exemplo serve para mostrar todas as funcionalidades do
+programa `noob`.
+
+Todo este texto vai ser guardado no ficheiro final, depois de ser processado.
+
+## Comandos
+
+Linhas que comecam por `$` indicam um comando. Existem 4 tipos
+diferentes de comandos e a seguir vao ser mostrados exemplos de cada.
+
+### Comandos Simples
+
+Comandos simples sao como o seguinte:
+
+$ echo isto e um comando!
+
+Nada de especial aqui.
+
+O nosso programa vai ler aquela linha e executar como se tivesse sido
+executada na shell (quase) e o seu output vai ser escrito tambem no
+ficheiro final, na linha seguinte a do comando, delimitado por `>>>`
+(para abrir) e `<<<` (para fechar).
+O comando anterior tera um bloco de output parecido com o seguinte:
+>>>
+isto e um comando!
+<<<
+
+De forma a podermos processar o mesmo notebook varias vezes, por exemplo,
+depois de alterar o texto ou algum comando, estes blocos de output sao
+ignorados e nao sao escritos no ficheiro final, depois de processado.
+Como tal, o bloco anterior vai ser apagado depois de se processar este
+ficheiro uma vez.
+
+### Comandos Piped
+
+Alem de executar comandos simples como o anterior, podemos executar
+comandos usando o output do comando anterior como input. Por exemplo:
+
+Este comando vai separar o output do comando anterior em palavras, uma
+por linha.
+
+$| sed s/\s\+/\n/g;
+
+Este inverte a ordem das letras dessas palavras.
+
+$| cat
+
+Este inverte a ordem das palavras.
+
+$| tac
+
+E este junta as palavras todas numa linha so, separadas por virgulas.
+
+$| paste -sd,
+
+No final destes comandos todos, se tudo correr bem, e presumindo que
+nao foi alterado o primeiro comando de exemplo, o output do comando
+anterior sera:
+
+>>>
+!odnamoc,mu,e,otsi
+<<<
+
+### Comandos Piped (com indice relativo)
+
+Alem do comando simples e piped, podemos tambem correr um programa com
+o output de um outro programa anterior arbitrario, usando indices relativos.
+
+Aqui vamos pegar no output do 3 comando atras (`cat` se nao for alterado)
+e alterar a ordem das linhas.
+
+$3| cat
+
+Como medida de seguranca/correccao do programa, presumimos que os
+enderecos `0` e `1` sao iguais, e que `$1|` e o mesmo que `$|`.  Por
+exemplo, o comando seguinte devera imprimir o mesmo que o anterior:
+
+$0| cat
+
+### Comandos Piped (com indice absoluto)
+
+Tudo o que foi descrito ate aqui era requisito do trabalho. Como extra,
+decidimos acrescentar uma funcionalidade. Esta funcionalidade e parecida
+com a anterior, no sentido em que podemos ir buscar o output de qualquer
+outro comando anterior arbitrario, mas em vez de ser com um indice relativo
+ao comando actual, e com um indice absoluto (ou relativo em relacao ao
+inicio do ficheiro).
+
+$-1| cat
+
+Para tal, escreve se o indice do comando que queremos, mas negativo.
+Neste caso, pegamos no output do primeiro comando do ficheiro.
+
+Tal como no anterior, como medida de seguranca/correccao, presumimos que
+os enderecos `-0` e `-1` sao iguais, e correspondem ao primeiro comando
+do ficheiro.
