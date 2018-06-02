@@ -1,0 +1,20 @@
+Este notebook de exemplo mostra a capacidade do programa
+tratar de casos em que se pede para executar um comando com
+redireccionamento do n-esimo comando anterior, assim:
+
+$ ls -l
+
+quando esse indice esta fora do alcance (por exemplo, so existe
+um comando anterior mas pedimos o 2 anterior).
+
+Apesar deste ficheiro estar mal formado, o comando acima e
+executado correctamente. Presumimos que o indice que queremos
+e o do primeiro comando do ficheiro.
+
+$2| shuf
+
+A partir daqui, o resto do ficheiro é processado normalmente
+
+$1| sort
+
+$3| tac

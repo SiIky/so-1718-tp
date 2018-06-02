@@ -1,0 +1,16 @@
+Este notebook de exemplo mostra a capacidade do programa
+tratar de casos em que se pede para executar um comando com
+redireccionamento do comando anterior, assim:
+
+$| ls -l
+
+mesmo não havendo nenhum comando antes deste.
+
+Apesar deste ficheiro estar mal formado, o comando acima e
+executado correctamente.
+
+A partir daqui, o resto do ficheiro é processado normalmente
+
+$| shuf
+
+$| sort

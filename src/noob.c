@@ -201,8 +201,7 @@ int process_cmd_line (struct rope * rope, struct str * line, struct ovec * outpu
 
     pipe(outpipe);
 
-    if (ovec_is_empty(outputs))
-        ip = false;
+    ifjmp((ovec_is_empty(outputs) && ip), ko);
 
     if (ip) /* merdas pro pipe */
         pipe(inpipe);
